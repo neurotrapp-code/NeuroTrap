@@ -1,0 +1,42 @@
+# Week 5-6 management portal overlay (Day 38 hardening + Day 42 packaging).
+# Run together with the base stack:
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.portal.yml up -d
+#
+# The portal sits on management-net + elk-net (to read the event DB) but NEVER on
+# honeypot-net, so a compromised honeypot cannot reach the console or database.
+services:
+  portal:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.portal
+    container_name: cadn-portal
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      DB_BACKEND: ${DB_BACKEND:-sqlite}
+      SQLITE_PATH: /data/cadn.sqlite
+      GEOIP_DB: /data/GeoLite2-City.mmdb
+    volumes:
+      - ../data:/data
+    networks: [management-net, elk-net]
+    # --- hardening ---
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: cadn-nginx
+    restart: unless-stopped
+    depends_on: [portal]
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    networks: [management-net]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE, CHOWN, SETUID, SETGID]
+    security_opt: ["no-new-privileges:true"]

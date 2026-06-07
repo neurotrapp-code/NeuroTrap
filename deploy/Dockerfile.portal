@@ -1,0 +1,21 @@
+# NeuroTrap/CADN management portal (Flask API + dashboard) — Day 42 packaging.
+FROM python:3.11-slim
+
+# non-root runtime user
+RUN useradd -m -u 10001 cadn
+WORKDIR /app
+
+# install only the portal deps
+COPY api/requirements.txt /app/api/requirements.txt
+COPY behavior/requirements.txt /app/behavior/requirements.txt
+RUN pip install --no-cache-dir -r api/requirements.txt \
+    && pip install --no-cache-dir pydantic==2.7.1
+
+# app code
+COPY . /app
+RUN chown -R cadn:cadn /app
+USER cadn
+
+EXPOSE 8000
+# gunicorn with gevent so the WebSocket live feed works under load
+CMD ["gunicorn", "-k", "gevent", "-w", "1", "-b", "0.0.0.0:8000", "api.app:create_app()"]

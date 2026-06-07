@@ -38,6 +38,9 @@ services:
       - ./honeypots/cowrie/honeyfs:/cowrie/cowrie-git/honeyfs
       - ./honeypots/cowrie/var/log/cowrie:/cowrie/cowrie-git/var/log/cowrie
     networks: [honeypot-net]
+    # hardening (Day 38): no privilege escalation, drop raw-socket cap
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [NET_RAW]
 
   dionaea:
     image: dinotools/dionaea:latest
@@ -54,6 +57,8 @@ services:
       - ./honeypots/dionaea/var/log:/opt/dionaea/var/log/dionaea
       - ./honeypots/dionaea/var/log:/opt/dionaea/var/lib/dionaea/binaries
     networks: [honeypot-net]
+    # hardening (Day 38)
+    security_opt: ["no-new-privileges:true"]
 
   # OPTIONAL event store (set DB_BACKEND=mongodb to use). Sits on elk-net +
   # management-net only — NOT honeypot-net — so a compromised honeypot cannot

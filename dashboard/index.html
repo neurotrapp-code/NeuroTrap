@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>NeuroTrap / CADN — Live Console</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+  <!-- login gate -->
+  <div id="login" class="login-screen">
+    <form id="login-form" class="login-card">
+      <h1>NeuroTrap <span>CADN</span></h1>
+      <p class="sub">Cognitive Adaptive Deception Network — Live Console</p>
+      <input id="u" placeholder="username" autocomplete="username"/>
+      <input id="p" type="password" placeholder="password" autocomplete="current-password"/>
+      <button type="submit">Sign in</button>
+      <div id="login-err" class="err"></div>
+    </form>
+  </div>
+
+  <!-- console -->
+  <div id="app" class="hidden">
+    <header>
+      <div class="brand">NeuroTrap <b>CADN</b> <span class="live" id="live-dot">● LIVE</span></div>
+      <div class="spacer"></div>
+      <div id="conn" class="conn">connecting…</div>
+      <button id="logout">Logout</button>
+    </header>
+
+    <section class="cards">
+      <div class="card"><div class="k">Total events</div><div class="v" id="s-total">—</div></div>
+      <div class="card"><div class="k">Attacker profiles</div><div class="v" id="s-profiles">—</div></div>
+      <div class="card"><div class="k">Responses taken</div><div class="v" id="s-responses">—</div></div>
+      <div class="card gauge-card">
+        <div class="k">Peak threat</div>
+        <div class="gauge"><div id="gauge-fill" class="gauge-fill"></div>
+          <div class="gauge-val" id="s-threat">—</div></div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel map-panel">
+        <h2>Attack origins (live GeoIP)</h2>
+        <div id="map"></div>
+        <p class="hint" id="geo-hint"></p>
+      </div>
+      <div class="panel">
+        <h2>Events / minute</h2>
+        <canvas id="timeline"></canvas>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>Live event feed</h2>
+        <table class="feed"><thead><tr>
+          <th>time</th><th>source</th><th>type</th><th>sev</th><th>detail</th>
+        </tr></thead><tbody id="feed"></tbody></table>
+      </div>
+      <div class="panel">
+        <h2>Top attackers</h2>
+        <div id="profiles" class="profiles"></div>
+        <h2>Autonomous responses</h2>
+        <table class="feed"><thead><tr>
+          <th>time</th><th>source</th><th>action</th><th>band</th><th>ok</th>
+        </tr></thead><tbody id="responses"></tbody></table>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

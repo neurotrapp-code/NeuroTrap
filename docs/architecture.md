@@ -1,17 +1,19 @@
-# CADN Architecture (Weeks 1-4 scope)
+# CADN Architecture (Weeks 1-6 — complete)
 
-CADN is organized into five logical layers. **Weeks 1-4 implement Layers 1-4.**
+CADN is organized into five logical layers. **All five are implemented.**
 
 | Layer | Responsibility | Status |
 |---|---|---|
 | 1 — Capture | Cowrie (SSH/Telnet), Dionaea (multi-proto), Honeyd virtual hosts | Implemented (W1) |
-| 2 — Detection | Scapy packet monitor, Zeek IDS, unified alert schema, event DB | Implemented (W2) |
+| 2 — Detection | Scapy packet monitor, Zeek IDS, tool fingerprinting, unified alert schema, event DB | Implemented (W2) |
 | 3 — Behavior Analysis | ML intent classifier, MITRE TTP extraction, profiling, campaign clustering, threat score | Implemented (W3) |
 | 4 — Deception Engine | Personalized honeypot environment generator (templates, fake creds/fs/servers, lifecycle) | Implemented (W4) |
-| 5 — Response & Viz | Autonomous response, Flask API, dashboard | Week 5 |
+| 5 — Response & Viz | Autonomous response (iptables/tc/tcpdump), alerting, Flask API + JWT, real-time dashboard | Implemented (W5) |
 
-See `NeuroTrap_CADN_Weeks3-4_Execution_Manual.md` for the full Layer 3/4 design,
-data flow, and per-day validation gates.
+Week 6 adds end-to-end testing, Nginx/Docker hardening, full docs, CI, and
+one-command deployment. See the per-phase execution manuals
+(`NeuroTrap_CADN_Weeks{1-2,3-4,5-6}_Execution_Manual.md`) and
+`validation_checklist.md`.
 
 ## Networks
 - `honeypot-net` (172.30.0.0/24): external-facing honeypots.
@@ -49,3 +51,14 @@ builds a believable fake filesystem, instantiates per-service fake servers (Dock
 optional; dry-run safe), and registers it with the lifecycle manager (deploy → monitor
 → auto-teardown on TTL or session close). Advanced environments seed canary AWS keys,
 `.env` secrets, private keys and fake DB dumps. Spawns in ≪ 30 s.
+
+## Layer 5 — Response & Visualization (Week 5)
+`ResponseEngine` thresholds the threat score into actions executed against the real
+host: `log` / `slow` (tc/iptables) / `redirect` (iptables DNAT + spawn deeper
+deception) / `isolate` / `block` (iptables DROP) / `forensic_capture` (tcpdump),
+plus email/Slack/Telegram alerting. The Flask API (`api/`) exposes JWT-protected
+`/api/events|attackers|stats|responses|response/block` and a `/ws/live-feed`
+WebSocket that tails the live event store; the dashboard (`dashboard/`) renders a
+geo heatmap (real MaxMind GeoIP), live timeline, threat gauge and attacker profile
+cards. All dashboard/API data is live — no demo source. `run_responder.py` ties
+Cowrie → behaviour → response on live traffic.

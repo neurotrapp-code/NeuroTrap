@@ -1,12 +1,18 @@
 # NeuroTrap — CADN (Cognitive Adaptive Deception Network)
-### Weeks 1–4 implementation: Honeypots + Detection + Behavior Analysis + Deception
+### Complete implementation (Weeks 1–6, all 5 layers)
 
-This repository is the runnable scaffold for the NeuroTrap/CADN graduation project:
-live honeypots (Cowrie, Dionaea, Honeyd), a Scapy + Zeek detection layer with a
-unified alert schema and indexed event store (Weeks 1–2), an ML **behavior analysis
-engine** that classifies attacker intent, extracts MITRE ATT&CK TTPs, scores threat
-and clusters campaigns (Week 3), and a **deception engine** that spawns personalized
-honeypot environments per attacker (Week 4).
+This repository is the full NeuroTrap/CADN graduation project: live honeypots
+(Cowrie, Dionaea, Honeyd), a Scapy + Zeek detection layer with a unified alert
+schema and indexed event store (Weeks 1–2), an ML **behavior analysis engine**
+(intent classification, MITRE ATT&CK TTPs, threat scoring, campaign clustering —
+Week 3), a **deception engine** that spawns personalized honeypots per attacker
+(Week 4), and an **autonomous response engine + real-time dashboard** (firewall
+actions, alerting, JWT API, WebSocket live feed, GeoIP heatmap — Week 5), all
+hardened, documented, CI-tested and one-command deployable (Week 6).
+
+> **Live data, not demo:** the dashboard/API read only the live event store the
+> pipeline fills from real traffic; responses hit the real firewall; the heatmap
+> uses a real GeoIP DB. See `docs/NeuroTrap_CADN_Weeks5-6_Execution_Manual.md`.
 
 > **This is a security lab, not a one-click web app.** It needs an Ubuntu 22.04 host,
 > Docker, host SSH moved off port 22, Zeek/Honeyd installed on the host, and a **separate
@@ -22,10 +28,24 @@ detection/              Scapy monitor + detectors (port-scan/brute-force/anomaly
 pipeline/               collectors, normalizer, indexed SQLite/Mongo event store
 behavior/               Week 3: feature eng, intent classifier, TTP/MITRE, profiler, threat score
 deception/              Week 4: deception engine, env templates, fake creds/fs/servers, lifecycle
+response/               Week 5: response engine (iptables/tc/tcpdump), alerting, live responder
+api/                    Week 5: Flask REST API + JWT + WebSocket + GeoIP (serves live store)
+dashboard/              Week 5: real-time console (Chart.js timeline, Leaflet heatmap, gauge)
+deploy/                 Week 6: Nginx (TLS/headers), portal Dockerfile, hardened compose overlay
 zeek/local.zeek         Zeek JSON logging policy
-scripts/                host bootstrap, attack simulation, FP measurement
-tests/                  unit tests (run: pytest)
-docs/                   architecture + the full execution manuals (Weeks 1-2 and 3-4)
+scripts/                host bootstrap, attack simulation, FP measurement, demo
+tests/                  unit + integration + e2e tests (run: pytest)
+docs/                   architecture, network diagram, 3 execution manuals, api/operator/install/model docs
+.github/workflows/      CI (train model + run tests + build portal image)
+```
+
+## Weeks 5–6 (Response, Dashboard, Delivery)
+```bash
+pip install -r api/requirements.txt
+export ADMIN_PASS=... JWT_SECRET=$(python -c "import os;print(os.urandom(32).hex())")
+python -m api.app                      # dashboard at http://localhost:8000
+sudo python response/run_responder.py  # live behaviour + autonomous response (host)
+make deploy                            # one-command full stack (honeypots + portal + nginx)
 ```
 
 ## Weeks 3–4 (Behavior Analysis + Deception)

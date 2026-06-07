@@ -1,0 +1,4 @@
+# Week 5 — Response engine
+# Actions use the host's iptables / tc / tcpdump (no Python package needed).
+# Alerting uses stdlib smtplib + urllib (no Python package needed).
+# This file is intentionally dependency-free; see api/requirements.txt for the portal.

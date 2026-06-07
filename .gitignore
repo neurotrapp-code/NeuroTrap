@@ -15,6 +15,12 @@ data/*.db
 *.db
 # generated deception environments (fake filesystems, may look like secrets)
 data/deception/
+# forensic pcap captures (Week 5 response engine)
+data/forensics/
+# GeoIP database (license-restricted; download from MaxMind)
+data/GeoLite2-City.mmdb
+# TLS certs for the portal
+deploy/certs/
 # trained ML models (regenerate with: python behavior/train_model.py)
 behavior/models/*.joblib
 # python

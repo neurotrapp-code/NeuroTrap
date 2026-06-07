@@ -1,0 +1,6 @@
+# Week 5 — Management API + dashboard backend
+Flask==3.0.3
+flask-sock==0.7.0          # WebSocket live feed
+PyJWT==2.8.0               # JWT auth
+geoip2==4.8.0              # real GeoIP heatmap (needs GeoLite2-City.mmdb)
+gunicorn==22.0.0           # production WSGI (Linux)
