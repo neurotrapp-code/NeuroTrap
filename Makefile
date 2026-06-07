@@ -10,7 +10,8 @@ help:
 	@echo "make train     - train the Week-3 intent classifier (macro-F1 > 0.85)"
 	@echo "make responder - run the live behaviour+response daemon (needs sudo for iptables)"
 	@echo "make api       - run the Week-5 dashboard/API (dev server)"
-	@echo "make deploy    - one-command full stack: honeypots + portal + nginx (Day 42)"
+	@echo "make deploy    - one-command full stack: honeypots + portal + nginx (SQLite)"
+	@echo "make deploy-mongo - full stack incl. Mongo (use with DB_BACKEND=mongodb)"
 	@echo "make deploy-down - tear down the full stack"
 venv:
 	python3 -m venv .venv && .venv/bin/pip install \
@@ -40,7 +41,9 @@ api:
 	.venv/bin/python -m api.app
 deploy:
 	docker compose -f docker-compose.yml -f deploy/docker-compose.portal.yml up -d --build
+deploy-mongo:
+	docker compose -f docker-compose.yml -f deploy/docker-compose.portal.yml --profile mongo up -d --build
 deploy-down:
-	docker compose -f docker-compose.yml -f deploy/docker-compose.portal.yml down
+	docker compose -f docker-compose.yml -f deploy/docker-compose.portal.yml --profile mongo down
 clean:
 	rm -f data/*.sqlite
