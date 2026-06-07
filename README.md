@@ -43,9 +43,17 @@ docs/                   architecture, network diagram, 3 execution manuals, api/
 ```bash
 pip install -r api/requirements.txt
 export ADMIN_PASS=... JWT_SECRET=$(python -c "import os;print(os.urandom(32).hex())")
+
+# DEV (portal runs on the host, binds 8000):
 python -m api.app                      # dashboard at http://localhost:8000
+
 sudo python response/run_responder.py  # live behaviour + autonomous response (host)
-make deploy                            # one-command full stack (honeypots + portal + nginx)
+
+# DEPLOY (portal runs in Docker behind Nginx; 8000 is NOT published):
+make deploy                            # SQLite stack
+make deploy-mongo                      # MongoDB stack
+#   -> dashboard at  https://<HOST_IP>:8443   (Nginx; self-signed cert in lab)
+#   (Nginx is on 8443, not 80/443, which the Dionaea HTTP honeypot uses.)
 ```
 
 ## Weeks 3–4 (Behavior Analysis + Deception)
