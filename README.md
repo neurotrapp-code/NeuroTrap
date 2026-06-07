@@ -18,7 +18,7 @@ honeypot environments per attacker (Week 4).
 docker-compose.yml      Cowrie + Dionaea (+ optional Mongo), 3 isolated networks
 .env.example            copy to .env and edit
 honeypots/              Cowrie cfg + userdb + fake filesystem; Dionaea + Honeyd configs
-detection/              Scapy monitor + detectors + validated AlertEvent schema
+detection/              Scapy monitor + detectors (port-scan/brute-force/anomaly/tool-fingerprint) + AlertEvent schema
 pipeline/               collectors, normalizer, indexed SQLite/Mongo event store
 behavior/               Week 3: feature eng, intent classifier, TTP/MITRE, profiler, threat score
 deception/              Week 4: deception engine, env templates, fake creds/fs/servers, lifecycle

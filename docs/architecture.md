@@ -24,7 +24,11 @@ Honeypot containers cannot reach the management/elk databases — isolation is v
 - Port scan: > 10 distinct dst ports / 5 s per src IP.
 - Brute force: > 5 auth-port attempts / 60 s per src IP.
 - Protocol anomaly: NULL / FIN / Xmas / SYN+FIN TCP flag combos.
+- Automated-tool fingerprint: HTTP User-Agent / SSH client banner / payload markers
+  (nmap, masscan, hydra, sqlmap, nikto, paramiko, libssh, mirai, …) → `automated_tool`.
 - Target false-positive rate: < 5%.
+
+See `network_diagram.md` for the lab topology, network isolation, and data flow.
 
 ## Unified event schema
 `{timestamp, src_ip, dst_port, attack_type, severity, raw_payload, honeypot_source}`
