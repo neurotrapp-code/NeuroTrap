@@ -12,17 +12,36 @@ echo "[*] repo: $(pwd)"
 
 COMPOSE=(-f docker-compose.yml -f deploy/docker-compose.portal.yml --profile mongo)
 
-echo "===== 1. pre-flight: .env ====="
-if [ ! -f .env ]; then
-  echo "[X] .env missing. Run: cp .env.example .env  then set the keys below."; exit 1
+echo "===== 0. conflict check: T-Pot / other honeypot platforms ====="
+TPOT=$(sudo docker ps -a --format '{{.Names}}' | grep -E \
+  '^(tpotinit|tanner|tanner_api|tanner_redis|tanner_phpox|suricata|cowrie|dionaea|conpot.*|heralding|honeytrap|elasticpot|mailoney|medpot|adbhoney|ipphoney|dicompot|sentrypeer|wordpot|miniprint|redishoneypot|ciscoasa|h0neytr4p|snare|ewsposter|fatt|p0f|logstash|ddospot|honeyaml)$' 2>/dev/null || true)
+if [ -n "$TPOT" ]; then
+  echo "[X] T-Pot (or another honeypot platform) is present:"
+  echo "$TPOT" | tr '\n' ' '; echo
+  echo "    It binds the SAME ports as CADN (22/80/445/...) and will conflict."
+  echo "    Stop it first, e.g.:"
+  echo "      sudo systemctl stop tpot 2>/dev/null"
+  echo "      sudo docker stop \$(sudo docker ps -q) 2>/dev/null   # or: cd /opt/tpot* && sudo docker compose down"
+  echo "    Then re-run this script.  (Override at your own risk: CADN_IGNORE_TPOT=1)"
+  [ "${CADN_IGNORE_TPOT:-0}" = "1" ] || exit 2
+  echo "[!] CADN_IGNORE_TPOT=1 set — continuing despite conflict."
 fi
-missing=0
-for k in DB_BACKEND MONGO_PASS ADMIN_PASS JWT_SECRET; do
-  if ! grep -qE "^${k}=.+" .env; then echo "[!] $k is NOT set in .env"; missing=1; fi
-done
-if grep -qE "^DB_BACKEND=mongodb" .env; then echo "[ok] DB_BACKEND=mongodb"; else
-  echo "[!] DB_BACKEND is not 'mongodb' — the portal will use SQLite."; fi
-[ "$missing" = 1 ] && echo "[!] Set the missing keys in .env (nano .env), then re-run."
+
+echo "===== 1. provision .env (auto: creates/fills missing keys) ====="
+[ -f .env ] || cp .env.example .env 2>/dev/null || touch .env
+getval(){ grep -E "^$1=" .env | head -1 | cut -d= -f2-; }
+set_env(){ # set_env KEY VALUE  (replace line if present, else append)
+  if grep -qE "^$1=" .env; then sed -i "s|^$1=.*|$1=$2|" .env; else printf '%s=%s\n' "$1" "$2" >> .env; fi; }
+gen(){ openssl rand -hex "${1:-12}" 2>/dev/null || head -c "$((${1:-12}*2))" /dev/urandom | od -An -tx1 | tr -d ' \n'; }
+
+set_env DB_BACKEND mongodb
+mp=$(getval MONGO_PASS); case "$mp" in ""|CHANGE_ME) mp=$(gen 12); set_env MONGO_PASS "$mp";; esac
+set_env MONGO_URI "mongodb://cadn:${mp}@localhost:27017/cadn?authSource=admin"
+if [ -z "$(getval ADMIN_PASS)" ]; then ap=$(gen 12); set_env ADMIN_PASS "$ap";
+  echo "  [*] generated ADMIN_PASS = $ap   <<< SAVE THIS (dashboard login) >>>"; fi
+[ -z "$(getval JWT_SECRET)" ] && set_env JWT_SECRET "$(gen 32)"
+[ -z "$(getval ADMIN_USER)" ] && set_env ADMIN_USER admin
+echo "[ok] .env keys:"; grep -E '^(DB_BACKEND|MONGO_PASS|ADMIN_USER|ADMIN_PASS|JWT_SECRET)=' .env | sed -E 's/=(.{0,3}).*/=\1***/'
 
 echo "===== 2. remove stray one-off containers (safe) ====="
 sudo docker rm -f dionaea-temp win-fs 2>/dev/null && echo "removed strays" || echo "no strays"
