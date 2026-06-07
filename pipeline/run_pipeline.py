@@ -27,10 +27,14 @@ ZEEK_DNS = os.environ.get("ZEEK_DNS_LOG", os.path.join(ZEEK_DIR, "dns.log"))
 
 store = EventStore()
 
+# PIPELINE_FROM_START=1 replays existing log files from the beginning (backfill),
+# then keeps tailing. Default tails only new lines.
+FROM_START = os.environ.get("PIPELINE_FROM_START") == "1"
+
 
 def run(path, fn, name):
-    print(f"[*] collector started: {name} -> {path}", flush=True)
-    for raw in tail_json(path):
+    print(f"[*] collector started: {name} -> {path} (from_start={FROM_START})", flush=True)
+    for raw in tail_json(path, from_start=FROM_START):
         evt = fn(raw)
         if evt:
             store.write(evt.to_dict())
