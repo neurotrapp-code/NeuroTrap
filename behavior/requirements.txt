@@ -1,0 +1,9 @@
+# Week 3 — Behavior Analysis Engine
+numpy==1.26.4
+scikit-learn==1.5.0
+joblib==1.4.2
+
+# Optional (enables embedding-based fuzzy TTP matching, Day 18).
+# The extractor falls back to rule-based mapping if these are absent.
+# spacy==3.7.4
+# sentence-transformers==2.7.0

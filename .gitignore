@@ -1,0 +1,24 @@
+# secrets
+.env
+*.key
+*.pem
+# logs & captured data (can contain malware/PII)
+**/var/log/*
+!**/var/log/.gitkeep
+!**/var/log/**/.gitkeep
+*.pcap
+captures/
+# database
+data/*.sqlite
+data/*.db
+*.sqlite
+*.db
+# generated deception environments (fake filesystems, may look like secrets)
+data/deception/
+# trained ML models (regenerate with: python behavior/train_model.py)
+behavior/models/*.joblib
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/

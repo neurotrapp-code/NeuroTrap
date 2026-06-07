@@ -1,0 +1,7 @@
+# Week 4 — Deception Engine
+PyYAML==6.0.1
+Faker==25.2.0
+
+# Optional (enables real container spawning for fake servers, Day 24).
+# Without it the engine runs in dry-run mode (state tracked, nothing launched).
+# docker==7.1.0

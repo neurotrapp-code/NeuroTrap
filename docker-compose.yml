@@ -1,0 +1,75 @@
+# NeuroTrap / CADN — base stack (Weeks 1-2)
+# Networks per project plan:
+#   honeypot-net   : external-facing, where honeypots live
+#   elk-net        : internal (no internet egress), log storage / processing
+#   management-net : portal + enrichment services
+networks:
+  honeypot-net:
+    name: honeypot-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+  elk-net:
+    name: elk-net
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+  management-net:
+    name: management-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.32.0.0/24
+
+services:
+  cowrie:
+    image: cowrie/cowrie:latest
+    container_name: cadn-cowrie
+    restart: unless-stopped
+    ports:
+      - "22:2222"          # host SSH 22 -> cowrie 2222
+      - "23:2223"          # host Telnet 23 -> cowrie 2223
+    volumes:
+      - ./honeypots/cowrie/etc/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro
+      - ./honeypots/cowrie/etc/userdb.txt:/cowrie/cowrie-git/etc/userdb.txt:ro
+      - ./honeypots/cowrie/honeyfs:/cowrie/cowrie-git/honeyfs
+      - ./honeypots/cowrie/var/log/cowrie:/cowrie/cowrie-git/var/log/cowrie
+    networks: [honeypot-net]
+
+  dionaea:
+    image: dinotools/dionaea:latest
+    container_name: cadn-dionaea
+    restart: unless-stopped
+    ports:
+      - "21:21"          # FTP
+      - "80:80"          # HTTP
+      - "445:445"        # SMB
+      - "3306:3306"      # MySQL
+      - "5060:5060/udp"  # SIP
+    volumes:
+      - ./honeypots/dionaea/etc:/opt/dionaea/etc/dionaea:ro
+      - ./honeypots/dionaea/var/log:/opt/dionaea/var/log/dionaea
+      - ./honeypots/dionaea/var/log:/opt/dionaea/var/lib/dionaea/binaries
+    networks: [honeypot-net]
+
+  # OPTIONAL event store (set DB_BACKEND=mongodb to use). Sits on elk-net +
+  # management-net only — NOT honeypot-net — so a compromised honeypot cannot
+  # reach the database.
+  mongo:
+    image: mongo:7
+    container_name: cadn-mongo
+    restart: unless-stopped
+    profiles: ["mongo"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: cadn
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-CHANGE_ME}
+      MONGO_INITDB_DATABASE: cadn
+    volumes:
+      - mongo-data:/data/db
+    networks: [elk-net, management-net]
+
+volumes:
+  mongo-data:

@@ -1,0 +1,13 @@
+# username:x:password   (x is ignored; use 0)
+# Accept a few common weak creds so attackers "get in" and we can watch them:
+root:0:root
+root:0:123456
+root:0:password
+root:0:admin
+admin:0:admin
+admin:0:password
+ubuntu:0:ubuntu
+# Accept any password for 'oracle' (wildcard):
+oracle:0:*
+# Explicitly REJECT a strong "real" password:
+root:0:!S3cure-Real-Pw

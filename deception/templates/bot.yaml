@@ -1,0 +1,33 @@
+# Environment template — AUTOMATED BOT / mass scanner.
+# Goal: a hardened-LOOKING server seeded with the common credentials bots try,
+# plus a believable IoT/edge vibe so droppers run and we capture the payload.
+name: bot
+display_name: Hardened Edge Server
+description: An internet-facing edge server that looks patched but takes common creds.
+os_banner: "Debian GNU/Linux 11 (bullseye)"
+ssh_banner: "SSH-2.0-OpenSSH_8.4p1 Debian-5+deb11u1"
+ttl_seconds: 900             # 15 min — bots are fast; recycle quickly
+
+services:
+  - proto: ssh
+    port: 2222
+    version: "OpenSSH_8.4p1"
+  - proto: telnet
+    port: 2323
+    version: "BusyBox v1.31.1"
+  - proto: http
+    port: 8080
+    version: "nginx/1.18.0"
+
+credential_profile:
+  count: 6
+  weak: true
+  common: true               # seed the exact creds botnets brute-force
+
+filesystem_profile: iot
+
+decoy_data:
+  aws_keys: false
+  env_secrets: true          # a thin .env to bait credential-stealing droppers
+  fake_db: false
+  private_ssh_keys: false

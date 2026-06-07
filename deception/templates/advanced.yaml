@@ -1,0 +1,35 @@
+# Environment template — ADVANCED human operator (targeted / hands-on-keyboard).
+# Goal: a juicy corporate server full of believable but fake sensitive data so we
+# maximise dwell time, harvest TTPs, and trip canary credentials when used.
+name: advanced
+display_name: Corporate Application Server
+description: A production-looking app server with DB creds, cloud keys and backups.
+os_banner: "Ubuntu 22.04.4 LTS"
+ssh_banner: "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.6"
+ttl_seconds: 7200            # 2 h — let them work and reveal objectives
+
+services:
+  - proto: ssh
+    port: 2222
+    version: "OpenSSH_8.9p1"
+  - proto: http
+    port: 8080
+    version: "nginx/1.24.0"
+  - proto: ftp
+    port: 2121
+    version: "vsftpd 3.0.5"
+  - proto: mysql
+    port: 33060
+    version: "8.0.36-0ubuntu0.22.04.1"
+
+credential_profile:
+  count: 8
+  weak: false                # realistic-strength creds; value is the data, not access
+
+filesystem_profile: corporate
+
+decoy_data:
+  aws_keys: true             # canary AWS keys (Week-6 canarytoken integration)
+  env_secrets: true          # .env with DB creds, API keys, JWT secret
+  fake_db: true              # seeded customer/employee tables
+  private_ssh_keys: true     # id_rsa to bait lateral movement

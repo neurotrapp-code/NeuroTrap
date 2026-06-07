@@ -1,0 +1,28 @@
+# Environment template — BEGINNER attacker (low skill / recon-only).
+# Goal: a plausible but unremarkable Linux box. Keep them busy, learn little risk.
+name: beginner
+display_name: Simple Linux Server
+description: A small single-purpose Ubuntu server with nothing obviously valuable.
+os_banner: "Ubuntu 18.04.6 LTS"
+ssh_banner: "SSH-2.0-OpenSSH_7.6p1 Ubuntu-4ubuntu0.7"
+ttl_seconds: 1800            # 30 min
+
+services:
+  - proto: ssh
+    port: 2222
+    version: "OpenSSH_7.6p1"
+  - proto: http
+    port: 8080
+    version: "Apache/2.4.29 (Ubuntu)"
+
+credential_profile:
+  count: 2
+  weak: true                 # easy creds so they "succeed" and keep engaging
+
+filesystem_profile: minimal
+
+decoy_data:
+  aws_keys: false
+  env_secrets: false
+  fake_db: false
+  private_ssh_keys: false
