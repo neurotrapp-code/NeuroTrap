@@ -23,22 +23,30 @@ from db import EventStore                                   # noqa: E402
 from behavior import BehaviorEngine                         # noqa: E402
 from behavior.features import parse_sessions                # noqa: E402
 from deception import DeceptionEngine                       # noqa: E402
-from response import ResponseEngine                         # noqa: E402
+from response import ResponseEngine, ResponseActuator, RecordingRunner  # noqa: E402
 
 COWRIE = os.environ.get(
     "COWRIE_LOG", os.path.join(ROOT, "honeypots/cowrie/var/log/cowrie/cowrie.json"))
 FROM_START = os.environ.get("RESPONDER_FROM_START") == "1"
+# OBSERVE mode (default): compute live verdicts/scores/TTPs + alerts, but do NOT
+# touch iptables or spawn containers — correct for a shared honeypot host (e.g.
+# T-Pot integration) where blocking would kill capture. RESPONDER_ENFORCE=1 makes
+# the firewall/redirect/deception actions real.
+ENFORCE = os.environ.get("RESPONDER_ENFORCE") == "1"
 
 
 def main():
     store = EventStore()
     behavior = BehaviorEngine(store=store)
-    deception = DeceptionEngine(dry_run=False)               # real environments
-    responder = ResponseEngine(store=store, deception_engine=deception)
+    deception = DeceptionEngine(dry_run=not ENFORCE)
+    actuator = ResponseActuator() if ENFORCE else ResponseActuator(runner=RecordingRunner())
+    responder = ResponseEngine(actuator=actuator, store=store, deception_engine=deception)
 
-    if not responder.actuator.available():
-        print("[!] iptables not available here — response actions will report "
-              "failure. Run on the Ubuntu honeypot host as root for live blocking.",
+    print(f"[*] responder mode: {'ENFORCE (real firewall + deception)' if ENFORCE else 'OBSERVE (verdicts + alerts only, no firewall changes)'}",
+          flush=True)
+    if ENFORCE and not responder.actuator.available():
+        print("[!] iptables not available here — enforce actions will report "
+              "failure. Run on the Ubuntu host as root for live blocking.",
               flush=True)
 
     print(f"[*] responder watching {COWRIE} (from_start={FROM_START})", flush=True)

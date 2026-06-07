@@ -1,0 +1,85 @@
+# CADN ANALYSIS-ONLY stack — for hosts where another platform (e.g. T-Pot) is the
+# capture layer. Brings up ONLY the brain: Mongo (event store) + portal (API +
+# dashboard) + nginx. No honeypots (T-Pot owns ports 22/80/445/...).
+#
+# Deploy from the repo root (paths below are project-root relative):
+#   docker compose --project-directory . -f deploy/docker-compose.analysis.yml up -d --build
+# (the scripts/deploy_analysis.sh wrapper does this for you)
+#
+# CADN's host-side pipeline + responder read T-Pot's Cowrie JSON and write here.
+networks:
+  elk-net:
+    name: cadn-elk-net
+    driver: bridge
+    internal: true
+    ipam:
+      config: [{subnet: 172.31.0.0/24}]
+  management-net:
+    name: cadn-management-net
+    driver: bridge
+    ipam:
+      config: [{subnet: 172.32.0.0/24}]
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: cadn-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: cadn
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-CHANGE_ME}
+      MONGO_INITDB_DATABASE: cadn
+    ports:
+      - "127.0.0.1:27017:27017"   # loopback only — host pipeline/responder reach it
+    volumes:
+      - mongo-data:/data/db
+    networks: [elk-net, management-net]
+
+  portal:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.portal
+    container_name: cadn-portal
+    restart: unless-stopped
+    environment:
+      DB_BACKEND: mongodb
+      GEOIP_DB: /data/GeoLite2-City.mmdb
+      MONGO_URI: mongodb://cadn:${MONGO_PASS:-CHANGE_ME}@mongo:27017/cadn?authSource=admin
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASS: ${ADMIN_PASS:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_TTL_MIN: ${JWT_TTL_MIN:-120}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      ALERT_FROM: ${ALERT_FROM:-}
+      ALERT_TO: ${ALERT_TO:-}
+      SLACK_WEBHOOK: ${SLACK_WEBHOOK:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    volumes:
+      - ./data:/data
+    networks: [management-net, elk-net]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: cadn-nginx
+    restart: unless-stopped
+    depends_on: [portal]
+    ports:
+      - "8443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
+    networks: [management-net]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE, CHOWN, SETUID, SETGID]
+    security_opt: ["no-new-privileges:true"]
+
+volumes:
+  mongo-data:
