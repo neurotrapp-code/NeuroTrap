@@ -1,70 +1,42 @@
-# NeuroTrap / CADN — base stack (Weeks 1-2)
-# Networks per project plan:
-#   honeypot-net   : external-facing, where honeypots live
-#   elk-net        : internal (no internet egress), log storage / processing
-#   management-net : portal + enrichment services
-networks:
-  honeypot-net:
-    name: honeypot-net
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.30.0.0/24
-  elk-net:
-    name: elk-net
-    driver: bridge
-    internal: true
-    ipam:
-      config:
-        - subnet: 172.31.0.0/24
-  management-net:
-    name: management-net
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.32.0.0/24
-
 services:
   cowrie:
     image: cowrie/cowrie:latest
     container_name: cadn-cowrie
     restart: unless-stopped
     ports:
-      - "22:2222"          # host SSH 22 -> cowrie 2222
-      - "23:2223"          # host Telnet 23 -> cowrie 2223
+      - "22:2222"
+      - "23:2223"
     volumes:
       - ./honeypots/cowrie/etc/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro
       - ./honeypots/cowrie/etc/userdb.txt:/cowrie/cowrie-git/etc/userdb.txt:ro
       - ./honeypots/cowrie/honeyfs:/cowrie/cowrie-git/honeyfs
       - ./honeypots/cowrie/var/log/cowrie:/cowrie/cowrie-git/var/log/cowrie
     networks: [honeypot-net]
-    # hardening (Day 38): no privilege escalation, drop raw-socket cap
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: [NET_RAW]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
 
   dionaea:
     image: dinotools/dionaea:latest
     container_name: cadn-dionaea
     restart: unless-stopped
     ports:
-      - "21:21"          # FTP
-      - "80:80"          # HTTP
-      - "445:445"        # SMB
-      - "3306:3306"      # MySQL
-      - "5060:5060/udp"  # SIP
+      - "21:21"
+      - "80:80"
+      - "445:445"
+      - "3307:3306"   # ✅ FIXED (كان 3306)
+      - "5060:5060/udp"
     volumes:
-      - ./honeypots/dionaea/etc:/opt/dionaea/etc/dionaea:ro
+      # Mount ONLY our JSON-logging handler — do NOT bind the whole etc dir, that
+      # hides the image's real config and makes dionaea crash-loop (exit 133).
+      - ./honeypots/dionaea/etc/ihandlers-enabled/log_json.yaml:/opt/dionaea/etc/dionaea/ihandlers-enabled/log_json.yaml:ro
       - ./honeypots/dionaea/var/log:/opt/dionaea/var/log/dionaea
       - ./honeypots/dionaea/var/log:/opt/dionaea/var/lib/dionaea/binaries
     networks: [honeypot-net]
-    # hardening (Day 38)
-    security_opt: ["no-new-privileges:true"]
+    security_opt:
+      - no-new-privileges:true
 
-  # OPTIONAL event store (set DB_BACKEND=mongodb to use). Sits on elk-net +
-  # management-net only — NOT honeypot-net — so a compromised honeypot cannot
-  # reach the database. Published ONLY on the host loopback so the host-side
-  # pipeline/responder/scripts can reach it, while remaining unreachable from the
-  # network and from honeypot containers. NEVER publish this on 0.0.0.0.
   mongo:
     image: mongo:7
     container_name: cadn-mongo
@@ -75,10 +47,35 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-CHANGE_ME}
       MONGO_INITDB_DATABASE: cadn
     ports:
-      - "127.0.0.1:27017:27017"   # loopback only — host tools, not the network
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongo-data:/data/db
-    networks: [elk-net, management-net]
+    networks:
+      - elk-net
+      - management-net
+
+networks:
+  honeypot-net:
+    name: honeypot-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+  elk-net:
+    name: elk-net
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+
+  management-net:
+    name: management-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.32.0.0/24
 
 volumes:
   mongo-data:

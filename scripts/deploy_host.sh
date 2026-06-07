@@ -36,6 +36,20 @@ if ! sudo docker compose "${COMPOSE[@]}" config >/dev/null 2>/tmp/cadn_cfg.err; 
 fi
 echo "[ok] compose config valid"
 
+echo "===== 3b. ensure TLS cert for nginx (self-signed for lab) ====="
+if [ ! -f deploy/certs/cadn.crt ]; then
+  mkdir -p deploy/certs
+  if openssl req -x509 -newkey rsa:2048 -nodes -days 825 \
+       -keyout deploy/certs/cadn.key -out deploy/certs/cadn.crt \
+       -subj "/CN=neurotrap-cadn" >/dev/null 2>&1; then
+    echo "[ok] generated self-signed cert in deploy/certs/"
+  else
+    echo "[!] openssl failed — install it (sudo apt-get install -y openssl); nginx will not start without a cert"
+  fi
+else
+  echo "[ok] cert present"
+fi
+
 echo "===== 4. deploy (build may take a few minutes) ====="
 sudo docker compose "${COMPOSE[@]}" up -d --build
 

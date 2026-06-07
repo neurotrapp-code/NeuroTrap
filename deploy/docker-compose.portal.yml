@@ -1,13 +1,17 @@
 # Week 5-6 management portal overlay (Day 38 hardening + Day 42 packaging).
-# Run together with the base stack:
+# Run from the REPO ROOT together with the base stack:
 #   docker compose -f docker-compose.yml -f deploy/docker-compose.portal.yml up -d
+#
+# IMPORTANT: Compose resolves relative paths against the PROJECT DIRECTORY (the
+# repo root, where docker-compose.yml lives) — NOT this file's location. So all
+# paths below are written relative to the repo root (./deploy/..., ./data).
 #
 # The portal sits on management-net + elk-net (to read the event DB) but NEVER on
 # honeypot-net, so a compromised honeypot cannot reach the console or database.
 services:
   portal:
     build:
-      context: ..
+      context: .
       dockerfile: deploy/Dockerfile.portal
     container_name: cadn-portal
     restart: unless-stopped
@@ -33,7 +37,7 @@ services:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
     volumes:
-      - ../data:/data
+      - ./data:/data
     networks: [management-net, elk-net]
     # --- hardening ---
     read_only: true
@@ -52,8 +56,8 @@ services:
     ports:
       - "8443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./certs:/etc/nginx/certs:ro
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro
     networks: [management-net]
     cap_drop: [ALL]
     cap_add: [NET_BIND_SERVICE, CHOWN, SETUID, SETGID]
