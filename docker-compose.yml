@@ -62,7 +62,9 @@ services:
 
   # OPTIONAL event store (set DB_BACKEND=mongodb to use). Sits on elk-net +
   # management-net only — NOT honeypot-net — so a compromised honeypot cannot
-  # reach the database.
+  # reach the database. Published ONLY on the host loopback so the host-side
+  # pipeline/responder/scripts can reach it, while remaining unreachable from the
+  # network and from honeypot containers. NEVER publish this on 0.0.0.0.
   mongo:
     image: mongo:7
     container_name: cadn-mongo
@@ -72,6 +74,8 @@ services:
       MONGO_INITDB_ROOT_USERNAME: cadn
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS:-CHANGE_ME}
       MONGO_INITDB_DATABASE: cadn
+    ports:
+      - "127.0.0.1:27017:27017"   # loopback only — host tools, not the network
     volumes:
       - mongo-data:/data/db
     networks: [elk-net, management-net]
