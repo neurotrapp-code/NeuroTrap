@@ -11,14 +11,27 @@ services:
       dockerfile: deploy/Dockerfile.portal
     container_name: cadn-portal
     restart: unless-stopped
-    env_file: ../.env
+    # No env_file (relative paths in overlays are fragile). Compose auto-loads
+    # .env from the project dir for ${...} substitution below.
     environment:
       DB_BACKEND: ${DB_BACKEND:-sqlite}
       SQLITE_PATH: /data/cadn.sqlite
       GEOIP_DB: /data/GeoLite2-City.mmdb
-      # In-container Mongo host is the compose service `mongo` (overrides .env,
-      # which uses localhost for host-side tools).
+      # In-container Mongo host is the compose service `mongo`.
       MONGO_URI: mongodb://cadn:${MONGO_PASS:-CHANGE_ME}@mongo:27017/cadn?authSource=admin
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASS: ${ADMIN_PASS:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_TTL_MIN: ${JWT_TTL_MIN:-120}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      ALERT_FROM: ${ALERT_FROM:-}
+      ALERT_TO: ${ALERT_TO:-}
+      SLACK_WEBHOOK: ${SLACK_WEBHOOK:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
     volumes:
       - ../data:/data
     networks: [management-net, elk-net]
